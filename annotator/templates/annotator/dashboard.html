@@ -1,0 +1,23 @@
+{% extends "annotator/html.html" %}
+{% block content %}
+    <form id="form-signout">
+        <button class="btn btn-lg btn-primary" type="submit">Sign out</button>
+    </form>
+    <h1>Hi {{ user.username }}, help annotate these sentences, please:</h1>
+{% endblock %}
+
+{% block tailjs %}
+    <script type="text/javascript">
+        $(document).ready(function() {
+            $("#form-signout").submit(function(e){
+                e.preventDefault();
+                var data = { fnc: 'logout' };
+                var args = { type: "POST", url: "{% url 'ajax' %}", data: data, complete: logout_complete };
+                $.ajax(args);
+            });
+            var logout_complete = function(res, status) {
+                window.location.replace("{% url 'thanks' %}");
+            };
+        });
+    </script>
+{% endblock %}

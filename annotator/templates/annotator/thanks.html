@@ -1,0 +1,43 @@
+{% extends "annotator/html.html" %}
+
+{% block morecss %}
+    <style type="text/css">
+        body { text-align: center; }
+        table { margin: 0 auto 0 auto; }
+        #form-signin {
+            max-width: 330px;
+            padding: 15px;
+            margin: 5px auto;
+        }
+        #form-signin .form-control { margin: 5px 0; }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <h1>Thanks for your annotation!</h1>
+    <p>Your efforts can help young souls graduate.</p>
+    <form id="form-signin">
+        <label for="inputToken" class="sr-only">Token</label>
+        <input type="text" id="inputToken" class="form-control" placeholder="Token" required autofocus>
+        <button class="btn btn-lg btn-primary btn-block" type="submit">Sign in with your token</button>
+    </form>
+    <p>Or,</p>
+    <script language="JavaScript" src="http://www.phdcomics.com/previewfeed_horiz_1.php"> </script>
+{% endblock %}
+
+{% block tailjs %}
+    <script type="text/javascript">
+        $(document).ready(function() {
+            $("#form-signin").submit(function(e){
+                e.preventDefault();
+                var data = { fnc: 'login', token: $("#inputToken").val() };
+                console.log(data);
+                var args = { type: "POST", url: "{% url 'ajax' %}", data: data, complete: login_complete };
+                $.ajax(args);
+            });
+            var login_complete = function(res, status) {
+                window.location.replace("{% url 'thanks' %}");
+            };
+        });
+    </script>
+{% endblock %}
