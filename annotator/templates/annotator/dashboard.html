@@ -1,23 +1,391 @@
 {% extends "annotator/html.html" %}
+
+{% block morecss %}
+    <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/themes/smoothness/jquery-ui.css" />
+{% endblock %}
+
 {% block content %}
-    <form id="form-signout">
-        <button class="btn btn-lg btn-primary" type="submit">Sign out</button>
-    </form>
-    <h1>Hi {{ user.username }}, help annotate these sentences, please:</h1>
+    <div class="tab-content">
+        <div class="tab-pane" id="panel">
+            <form id="form-signout" class="nav-buttons">
+                <button class="btn btn-lg btn-warning" type="submit">Sign out</button>
+            </form>
+            <h1>Hi {{ user.username }},<br/> please help with these, thanks:</h1>
+            <div><div class="alert alert-info">Loading...</div></div>
+            <div id="task-list" class="list-group">
+            </div>
+        </div>
+        <div class="tab-pane" id="task">
+            <form id="form-task" class="nav-buttons">
+                <button id="btn-done" class="btn btn-lg btn-primary" type="submit">Done</button>
+                <button id="btn-cancel" class="btn btn-lg btn-info" type="submit">Cancel</button>
+                <button id="btn-signout" class="btn btn-lg btn-warning" type="submit">Sign out</button>
+            </form>
+            <div><div class="alert alert-info">Loading...</div></div>
+            <div id="task-workspace">
+            </div>
+        </div>
+    </div>
 {% endblock %}
 
 {% block tailjs %}
+    <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/jquery-ui.min.js"></script>
     <script type="text/javascript">
+        var noop = function(e) { e.preventDefault(); }
+
         $(document).ready(function() {
-            $("#form-signout").submit(function(e){
-                e.preventDefault();
-                var data = { fnc: 'logout' };
-                var args = { type: "POST", url: "{% url 'ajax' %}", data: data, complete: logout_complete };
-                $.ajax(args);
+
+            $("#form-signout").submit(function(e) {
+                noop(e);
+                logout();
             });
+
+            $("#form-task #btn-done").click(function(e) {
+                noop(e);
+                showTaskList();
+            });
+
+            $("#form-task #btn-cancel").click(function(e) {
+                noop(e);
+                $("#form-task #btn-done").unbind("click").click(function(e) {
+                    noop(e);
+                    showTaskList();
+                });
+                showTaskList();
+            });
+
+            $("#form-task #btn-signout").click(function(e) {
+                noop(e);
+                logout();
+            });
+
+            showTaskList();
+        });
+        
+        function logout() {
             var logout_complete = function(res, status) {
                 window.location.replace("{% url 'thanks' %}");
             };
-        });
+
+            var data = { fnc: "logout" };
+            var args = { type: "POST", url: "{% url 'ajax' %}", data: data, complete: logout_complete };
+            $.ajax(args);
+        }
+
+        function createProgressBar(done, total) {
+            var percent = (100*done/total).toFixed(1);
+            return $("<div><p>Progress " + percent + "% (" + done + "/" + total + ")</p>"
+                    + "<div id='progress-bar'><div style='width: " + percent + "%;'></div></div></div>");
+        }
+
+        function createMsg(text, level) {
+            $("#msg_box").remove();
+            return $(document.createElement("div")).text(text).addClass("alert alert-" + level).attr("id", "msg_box");
+        }
+
+        function createTaskList(list) {
+            task_list = [];
+            $.each(list, function(index, value) {
+                var item = $("<a href='javascript:' class='list-group-item'>Sentence #" + value["sentence"] + "</a>");
+                if (value["done"] == true) {
+                    item.addClass("list-group-item-success").append($("<span class='glyphicon glyphicon-ok' aria-hidden='true'></span>"));
+                }
+                item.click(function(e) { showTask(value["sentence"]); });
+                task_list.push(item);
+            });
+            return task_list;
+        }
+
+        function showTaskList() {
+            $("#task").removeClass("active");
+            $("#panel").addClass("active");
+            $(window).unbind("resize");
+            clearWorkspace();
+
+            var msg_box = createMsg("Loading...", "info");
+            $("#task-list").empty().append(msg_box).prev().empty();
+
+            var show_tasklist_complete = function(res, status) {
+                var jobj = res.responseJSON;
+                if (status == "success") {
+                    $("#task-list").empty().append(createTaskList(jobj["tasks"]))
+                        .prev().empty().append(createProgressBar(jobj["done"], jobj["total"]));
+                } else {
+                    msg_box.text("Error").attr("class", "alert alert-danger");
+                }
+            };
+
+            var data = { fnc: "show-task-list" };
+            var args = { type: "POST", url: "{% url 'ajax' %}", data: data, complete: show_tasklist_complete};
+            $.ajax(args);
+        }
+
+        function showTask(sentence) {
+            $("#panel").removeClass("active");
+            $("#task").addClass("active");
+            $(window).unbind("resize");
+
+            var msg_box = createMsg("Loading...", "info");
+            $("#task-workspace").empty().append(msg_box).prev().empty();
+
+            var show_task_complete = function(res, status) {
+                var jobj = res.responseJSON;
+                if (status == "success") {
+                    var data_store = initWorkspace(sentence, jobj);
+                } else {
+                    msg_box.text("Error").attr("class", "alert alert-danger");
+                }
+            };
+
+            var data = { fnc: "show-task", sentence: sentence };
+            var args = { type: "POST", url: "{% url 'ajax' %}", data: data, complete: show_task_complete};
+            $.ajax(args);
+        }
+
+        function drawLine(a, b) {
+            var randomFloat = function() {
+                return Math.random() * 10 - 5;
+            };
+
+            var getPos = function(e) {
+                return {
+                    x: e.offset().left + e.width() / 2 + randomFloat(),
+                    y: e.offset().top + e.height() / 2 + randomFloat()
+                };
+            };
+
+            var a_pos = getPos(a);
+            var b_pos = getPos(b);
+
+            var p_left = Math.min(a_pos.x, b_pos.x) - 2;
+            var p_right = Math.max(a_pos.x, b_pos.x) + 2;
+            var p_top = Math.min(a_pos.y, b_pos.y) - 2;
+            var p_bottom = Math.max(a_pos.y, b_pos.y) + 2;
+
+            var c = $(document.createElement("canvas")).attr({
+                "height": p_bottom - p_top + 3,
+                "width": p_right - p_left + 3,
+                "class": "connective-line"
+            }).css({
+                "position": "absolute",
+                "top": p_top,
+                "left": p_left,
+                "opacity": 0.5,
+                "z-index": 1
+            }).appendTo($("#task-workspace"))[0].getContext("2d");
+
+            c.strokeStyle = "#f00";
+            c.lineWidth = 2;
+            c.beginPath();
+            c.moveTo(a_pos.x - p_left, a_pos.y - p_top);
+            c.lineTo(b_pos.x - p_left, b_pos.y - p_top);
+            c.stroke();
+
+            return c;
+        }
+        
+        function clearWorkspace() {
+            $(".connective-line").remove();
+            $(".target.single").removeClass("single");
+            $(".target.pair").removeClass("pair");
+            $("#non-list, #single-list, #pair-list").empty();
+        }
+
+        function initWorkspace(sentence, jobj) {
+            var data_store = {non: jobj["targets"], single: {}, pair: {}};
+
+            var text_board = createTaskElements(sentence, jobj, data_store);
+
+            text_board.children(".draggable").draggable({
+                addClasses: false, revert: true, revertDuration: 0, stack: ".draggable",
+                stop: function(event, ui) { $(event.toElement).one("click", function(e) { e.stopImmediatePropagation(); }); }
+            });
+            text_board.children(".candidate").click(function(e) {
+                var that = $(this);
+                that.toggleClass("single");
+                if (that.hasClass("single")) {
+                    addSingle(data_store, that.data("offset"));
+                } else {
+                    addNon(data_store, that.data("offset"));
+                }
+                renderConnective(data_store);
+            });
+            text_board.children(".draggable").each(function() {
+                var droppable = $(this);
+                droppable.droppable({
+                    activeClass: "droppable",
+                    drop: function (event, ui) {
+                        addPair(data_store, droppable.data("offset"), $(ui.draggable).data("offset"));
+                        renderConnective(data_store);
+                    }
+                });
+            });
+
+            $(window).resize(function() {
+                renderConnective(data_store);
+            });
+
+            $("#form-task #btn-done").unbind("click").click(function(e) {
+                noop(e);
+                updateTask(sentence, data_store);
+            });
+
+            $.each(jobj["m_singles"], function(key, value) {
+                addSingle(data_store, key);
+            });
+            $.each(jobj["m_pairs"], function(key, value) {
+                addPair(data_store, key, value);
+            });
+
+            appendConnectiveSections();
+            renderConnective(data_store);
+
+            return data_store;
+        }
+
+        function createTaskElements(sentence, jobj, data_store) {
+            var done = jobj["done"], total = jobj["total"], tokens = jobj["tokens"];
+            var targets = jobj["targets"], singles = jobj["singles"], pairs = jobj["pairs"];
+
+            var dict = {}, elements = {};
+            data_store["dict"] = dict;
+            data_store["elements"] = elements;
+
+            // add header
+            $("#task-workspace").empty()
+                .prev().empty().append($(document.createElement("h1")).text("Sentence #" + sentence))
+                .append(createProgressBar(done, total));
+
+            // create sentence text
+            var text_nodes = [];
+            $.each($.map(tokens, function(token, idx) {
+                        if (idx in targets) {
+                            dict[idx] = token;
+                            var t = $(document.createElement("span")).addClass("target").data("offset", idx).text(token);
+                            if (idx in singles) {
+                                t.addClass("candidate");
+                            }
+                            if (idx in pairs) {
+                                t.addClass("draggable");
+                            }
+                            elements[idx] = t;
+                            return t;
+                        } else {
+                            return $(document.createTextNode(token));
+                        }
+                    }), function(index, value) {
+                text_nodes.push(value);
+                text_nodes.push($(document.createTextNode(" ")));
+            });
+
+            return $(document.createElement("div")).addClass("text-board")
+                .appendTo("#task-workspace").append(text_nodes);
+        }
+
+        function appendConnectiveSections() {
+            $("#task-workspace")
+            .append($(document.createElement("h2")).text("Non Discourse Uses:"))
+            .append($(document.createElement("div")).attr("id", "non-list"))
+            .append($(document.createElement("h2")).text("Single Connectives:"))
+            .append($(document.createElement("div")).attr("id", "single-list"))
+            .append($(document.createElement("h2")).text("Pair Connectives:"))
+            .append($(document.createElement("div")).attr("id", "pair-list"));
+        }
+
+        function renderConnective(data_store) {
+            var getSpan = function(offset, paired) {
+                if (typeof paired != "boolean") {
+                    var a = offset, b = paired;
+                    var a_text = a + "-" + data_store["dict"][a];
+                    var b_text = b + "-" + data_store["dict"][b];
+                    return $("<span>(" + a_text + ", " + b_text +")</span>");
+                } else {
+                    return $("<span>" + offset + "-" + data_store["dict"][offset] + "</span>");
+                }
+            };
+
+            setTimeout(function() {
+                    clearWorkspace();
+                    $.each(["non", "single", "pair"], function (index, value) {
+                        $("#" + value + "-list").append($.map(data_store[value], function(element, key) { return getSpan(key, element); }));
+                    });
+                    $.each(data_store["single"], function (key, value) {
+                        data_store["elements"][key].addClass("single");
+                    });
+                    $.each(data_store["pair"], function (key, value) {
+                        var a = data_store["elements"][key], b = data_store["elements"][value];
+                        a.addClass("pair");
+                        b.addClass("pair");
+                        drawLine(a, b);
+                    });
+                }, 50);
+        }
+        
+        function removePair(data_store, offset) {
+            $.each(data_store["pair"], function(index, value) {
+                if (index == offset) {
+                    delete data_store["pair"][index];
+                    data_store["non"][value] = true;
+                } else if (value == offset) {
+                    delete data_store["pair"][index];
+                    data_store["non"][index] = true;
+                }
+            });
+        }
+
+        function addSingle(data_store, offset) {
+            removePair(data_store, offset);
+            data_store["single"][offset] = true;
+            delete data_store["non"][offset];
+        }
+
+        function addNon(data_store, offset) {
+            removePair(data_store, offset);
+            data_store["non"][offset] = true;
+            delete data_store["single"][offset];
+        }
+
+        function addPair(data_store, a, b) {
+            if (a > b) {
+                var tmp = b;
+                b = a;
+                a = tmp;
+            }
+            removePair(data_store, a);
+            removePair(data_store, b);
+            delete data_store["non"][a];
+            delete data_store["non"][b];
+            delete data_store["single"][a];
+            delete data_store["single"][b];
+            data_store["pair"][a] = b;
+        }
+
+        function updateTask(sentence, data_store) {
+
+            var msg_box = createMsg("Updating...", "info");
+            $("#task-workspace").prepend(msg_box);
+
+            var update_task_complete = function(res, status) {
+                var jobj = res.responseJSON;
+                if (status == "success") {
+                    msg_box.text("Success").attr("class", "alert alert-success");
+                    var next = jobj["next"];
+                    if (next == "none") {
+                        showTaskList();
+                    } else {
+                        showTask(next); 
+                    }
+                } else {
+                    msg_box.text("Error").attr("class", "alert alert-danger");
+                }
+            };
+
+            var singles = $.map(data_store["single"], function(element, key) { return key; });
+            var pairs = $.map(data_store["pair"], function(element, key) { return key + "-" + element; });
+            var data = { fnc: "update", sentence: sentence, singles: singles, pairs: pairs };
+            var args = { type: "POST", url: "{% url 'ajax' %}", data: data , complete: update_task_complete};
+            $.ajax(args);
+        }
+
     </script>
 {% endblock %}

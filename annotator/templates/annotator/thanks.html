@@ -31,7 +31,6 @@
             $("#form-signin").submit(function(e){
                 e.preventDefault();
                 var data = { fnc: 'login', token: $("#inputToken").val() };
-                console.log(data);
                 var args = { type: "POST", url: "{% url 'ajax' %}", data: data, complete: login_complete };
                 $.ajax(args);
             });

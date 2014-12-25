@@ -1,1 +1,61 @@
 .container { margin-top: 40px; }
+.nav-buttons { text-align: right; }
+
+#progress-bar {
+    background: #000;
+}
+
+#progress-bar div {
+    height: 5px;
+    width: 0%;
+    background: #3c763d;
+}
+
+#task-list, #task-workspace { margin-top: 10px; }
+#task-list a span { margin-left: 30px; }
+
+#task-workspace .text-board {
+    border-bottom: 2px solid #eee;
+    margin-bottom: 10px;
+    padding-bottom: 50px;
+}
+
+#task-workspace .target {
+    padding: 2px;
+    cursor: pointer;
+    background: #fff;
+}
+
+#task-workspace .target.candidate, #non-list span {
+    background: #ddd;
+}
+
+#task-workspace .target.single, #single-list span {
+    background: #dff0d8;
+}
+
+#task-workspace .target.pair, #pair-list span {
+    background: #f2dede;
+}
+
+#task-workspace .target.single {
+    border-bottom: 2px #3c763d solid;
+    margin-bottom: -2px;
+}
+
+#task-workspace .target.draggable {
+    outline: 2px #aaa solid;
+}
+
+#task-workspace .target.droppable {
+    outline: 3px red dotted;
+}
+
+.connective-line {
+    pointer-events: none;
+}
+
+#non-list span, #single-list span, #pair-list span {
+    margin: 10px;
+    padding: 5px;
+}
