@@ -31,14 +31,14 @@ def thanks(request, token=None):
 def ajax(request):
     if request.method == 'POST' and request.is_ajax():
         fnc = request.POST['fnc']
-        if fnc == 'logout':
-            logout(request)
-            return HttpResponse()
-        elif fnc == 'login':
+        if fnc == 'login':
             if login_with_token(request, request.POST['token']):
                 return HttpResponse()
         elif request.user.is_authenticated():
-            if fnc == 'show-task-list':
+            if fnc == 'logout':
+                logout(request)
+                return HttpResponse()
+            elif fnc == 'show-task-list':
                 return show_task_list(request.user)
             elif fnc == 'show-task':
                 return show_task(request.user, int(request.POST['sentence']))
