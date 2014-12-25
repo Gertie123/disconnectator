@@ -79,8 +79,14 @@
         }
 
         function createMsg(text, level) {
-            $("#msg_box").remove();
-            return $(document.createElement("div")).text(text).addClass("alert alert-" + level).attr("id", "msg_box");
+            return $(document.createElement("div")).text(text).addClass("alert alert-" + level);
+        }
+
+        function createInfo(text, level) {
+            $("#info_box").remove();
+            return $(document.createElement("div")).text(text)
+                .addClass("alert alert-" + level).attr("id", "info_box")
+                .css({"position": "absolute"});
         }
 
         function createTaskList(list) {
@@ -186,6 +192,7 @@
         
         function clearWorkspace() {
             $(".connective-line").remove();
+            $("#info_box").remove();
             $(".target.single").removeClass("single");
             $(".target.pair").removeClass("pair");
             $("#non-list, #single-list, #pair-list").empty();
@@ -362,13 +369,13 @@
 
         function updateTask(sentence, data_store) {
 
-            var msg_box = createMsg("Updating...", "info");
-            $("#task-workspace").prepend(msg_box);
+            var info_box = createInfo("Updating...", "info");
+            $("#task").prepend(info_box);
 
             var update_task_complete = function(res, status) {
                 var jobj = res.responseJSON;
                 if (status == "success") {
-                    msg_box.text("Success").attr("class", "alert alert-success");
+                    info_box.text("Success").attr("class", "alert alert-success");
                     var next = jobj["next"];
                     if (next == "none") {
                         showTaskList();
@@ -376,7 +383,7 @@
                         showTask(next); 
                     }
                 } else {
-                    msg_box.text("Error").attr("class", "alert alert-danger");
+                    info_box.text("Error").attr("class", "alert alert-danger");
                 }
             };
 

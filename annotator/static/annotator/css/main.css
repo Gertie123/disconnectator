@@ -44,7 +44,7 @@
 }
 
 #task-workspace .target.draggable {
-    outline: 2px #aaa solid;
+    outline: 2px #444 solid;
 }
 
 #task-workspace .target.droppable {
