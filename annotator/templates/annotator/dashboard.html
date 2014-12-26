@@ -209,12 +209,21 @@
             });
             text_board.children(".candidate").click(function(e) {
                 var that = $(this);
-                that.toggleClass("single");
-                if (that.hasClass("single")) {
-                    addSingle(data_store, that.data("offset"));
-                } else {
+                if (that.hasClass("pair")) {
                     addNon(data_store, that.data("offset"));
+                } else {
+                    that.toggleClass("single");
+                    if (that.hasClass("single")) {
+                        addSingle(data_store, that.data("offset"));
+                    } else {
+                        addNon(data_store, that.data("offset"));
+                    }
                 }
+                renderConnective(data_store);
+            });
+            text_board.children(".draggable").not(".candidate").click(function(e) {
+                var that = $(this);
+                addNon(data_store, that.data("offset"));
                 renderConnective(data_store);
             });
             text_board.children(".draggable").each(function() {
