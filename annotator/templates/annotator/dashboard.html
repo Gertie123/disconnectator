@@ -72,10 +72,15 @@
             $.ajax(args);
         }
 
-        function createProgressBar(done, total) {
-            var percent = (100*done/total).toFixed(1);
-            return $("<div><p>Progress " + percent + "% (" + done + "/" + total + ")</p>"
-                    + "<div id='progress-bar'><div style='width: " + percent + "%;'></div></div></div>");
+        function createProgressBar(done, total, task_mode) {
+            if (task_mode) {
+                var percent = (100*done/total).toFixed(1);
+                return $("<div><p>Progress " + percent + "% (" + done + "/" + total + ")</p>"
+                        + "<div id='progress-bar'><div style='width: " + percent + "%;'></div></div></div>");
+            } else {
+                return $("<div><p>Progress: " + done + " tasks done</p>"
+                        + "<div id='progress-bar'><div style='width: 100%;'></div></div></div>");
+            }
         }
 
         function createMsg(text, level) {
@@ -114,8 +119,12 @@
             var show_tasklist_complete = function(res, status) {
                 var jobj = res.responseJSON;
                 if (status == "success") {
-                    $("#task-list").empty().append(createTaskList(jobj["tasks"]))
-                        .prev().empty().append(createProgressBar(jobj["done"], jobj["total"]));
+                    if (jobj["task_mode"] || jobj["next"] == "none") {
+                        $("#task-list").empty().append(createTaskList(jobj["tasks"]))
+                            .prev().empty().append(createProgressBar(jobj["done"], jobj["total"], true));
+                    } else {
+                        showTask(jobj["next"]);
+                    }
                 } else {
                     msg_box.text("Error").attr("class", "alert alert-danger");
                 }

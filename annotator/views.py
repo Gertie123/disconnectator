@@ -1,4 +1,5 @@
 import json
+import random
 
 from collections import defaultdict
 
@@ -59,20 +60,23 @@ def login_with_token(request, token):
         return False
 
 def show_task_list(user):
-    tasks = [{'sentence': t.sentence.id, 'done': t.done} for t in Task.objects.filter(annotator=user)]
+    tasks = [{'sentence': t.sentence.id, 'done': t.is_done} for t in Task.objects.filter(annotator=user)]
     done = sum(t['done'] for t in tasks)
 
-    response_data = {'total': len(tasks), 'done': done, 'tasks': tasks}
+    response_data = {'total': len(tasks), 'done': done, 'tasks': tasks, 'task_mode': user.is_task_mode, 'next': get_undone_sentence(user)}
 
     return HttpResponse(json.dumps(response_data), content_type='application/json')
 
 def show_task(user, sentence_num):
     sentence = Sentence.objects.get(id=sentence_num)
     if sentence is not None:
+        if not user.is_task_mode:
+            if not Task.objects.filter(annotator=user, sentence=sentence).exists():
+                Task.objects.create(annotator=user, sentence=sentence).save()
         task = Task.objects.get(annotator=user, sentence=sentence)
         if task is not None:
             total = Task.objects.filter(annotator=user)
-            done = total.filter(done=True)
+            done = total.filter(is_done=True)
 
             tokens = sentence.text.strip().split(' ')
             targets, singles, pairs = analyse_tokens(tokens)
@@ -160,7 +164,7 @@ def update_task(user, sentence_num, m_singles, m_pairs, time_spent):
                 Annotation.objects.create(annotator=user, sentence=sentence, positions='{},{}'.format(x, y)).save()
 
             # update task
-            task.done = True
+            task.is_done = True
 
             time_spents = ','.join([time_spent] + task.finished_times.split(',')).strip(',')
             # ensure length limit
@@ -174,12 +178,35 @@ def update_task(user, sentence_num, m_singles, m_pairs, time_spent):
 
             task.save()
 
-            try:
-                next_task = Task.objects.filter(annotator=user, done=False)[0]
-                response_data = {'next': next_task.sentence.id}
-            except IndexError:
-                response_data = {'next': 'none'}
+            response_data = {'next': get_undone_sentence(user)}
 
             return HttpResponse(json.dumps(response_data), content_type='application/json')
 
     return HttpResponseServerError()
+
+def get_undone_sentence(user):
+    if user.is_task_mode:
+        next_tasks = Task.objects.filter(annotator=user, is_done=False)
+        if next_tasks.exits():
+            return next_tasks[0]
+        else:
+            return 'none'
+    else:
+        sents = {}
+        for sent in Sentence.objects.all():
+            sents[sent.id] = 0
+
+        for t in Task.objects.filter(is_done=True):
+            sents[t.sentence.id] += 1
+
+        for t in Task.objects.filter(annotator=user, is_done=True):
+            del sents[t.sentence.id]
+
+        if len(sents) == 0:
+            return 'none'
+
+        undone = list(sents.keys())
+        random.shuffle(undone)
+        undone.sort(key=lambda x: sents[x])
+
+        return undone[0]
