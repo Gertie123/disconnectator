@@ -97,7 +97,7 @@ def show_task(user, sentence_num):
 
             response_data = {'total': total.count(), 'done': done.count(), 'tokens': tokens,
                     'targets': targets, 'singles': singles, 'pairs': pairs,
-                    'm_singles': m_singles, 'm_pairs': m_pairs}
+                    'm_singles': m_singles, 'm_pairs': m_pairs, 'task_mode': user.is_task_mode}
 
             return HttpResponse(json.dumps(response_data), content_type='application/json')
 

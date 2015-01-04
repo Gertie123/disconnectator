@@ -272,6 +272,7 @@
         function createTaskElements(sentence, jobj, data_store) {
             var done = jobj["done"], total = jobj["total"], tokens = jobj["tokens"];
             var targets = jobj["targets"], singles = jobj["singles"], pairs = jobj["pairs"];
+            var task_mode = jobj["task_mode"];
 
             var dict = {}, elements = {};
             data_store["dict"] = dict;
@@ -280,7 +281,7 @@
             // add header
             $("#task-workspace").empty()
                 .prev().empty().append($(document.createElement("h1")).text("Sentence #" + sentence))
-                .append(createProgressBar(done, total));
+                .append(createProgressBar(done, total, task_mode));
 
             // create sentence text
             var text_nodes = [];
