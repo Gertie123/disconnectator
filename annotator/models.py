@@ -15,6 +15,7 @@ class Task(models.Model):
     annotator = models.ForeignKey(settings.AUTH_USER_MODEL)
     sentence = models.ForeignKey('Sentence')
     done = models.BooleanField(default=False)
+    finished_times = models.CommaSeparatedIntegerField(max_length=500, blank=True, default='')
 
     class Meta:
         unique_together = ('annotator', 'sentence',)

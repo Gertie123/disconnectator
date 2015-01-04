@@ -45,7 +45,8 @@ def ajax(request):
             elif fnc == 'update':
                 return update_task(request.user, int(request.POST['sentence']),
                         request.POST.getlist('singles[]'),
-                        request.POST.getlist('pairs[]'), )
+                        request.POST.getlist('pairs[]'),
+                        request.POST['time_spent'])
 
     return HttpResponseServerError()
 
@@ -128,7 +129,7 @@ def indices(lst, value_list, *, start=0):
         if i >= start and x in value_list:
             yield i
 
-def update_task(user, sentence_num, m_singles, m_pairs):
+def update_task(user, sentence_num, m_singles, m_pairs, time_spent):
     sentence = Sentence.objects.get(id=sentence_num)
     if sentence is not None:
         task = Task.objects.get(annotator=user, sentence=sentence)
@@ -160,6 +161,17 @@ def update_task(user, sentence_num, m_singles, m_pairs):
 
             # update task
             task.done = True
+
+            time_spents = ','.join([time_spent] + task.finished_times.split(',')).strip(',')
+            # ensure length limit
+            while len(time_spents) > 90:
+                splited = time_spents.rsplit(',', 1)
+                if len(splited) == 1:
+                    time_spents = ''
+                else:
+                    time_spents = splited[0]
+            task.finished_times = time_spents
+
             task.save()
 
             try:

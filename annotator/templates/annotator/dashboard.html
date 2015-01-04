@@ -199,7 +199,7 @@
         }
 
         function initWorkspace(sentence, jobj) {
-            var data_store = {non: jobj["targets"], single: {}, pair: {}};
+            var data_store = {non: jobj["targets"], single: {}, pair: {}, start_time: null};
 
             var text_board = createTaskElements(sentence, jobj, data_store);
 
@@ -255,6 +255,7 @@
 
             appendConnectiveSections();
             renderConnective(data_store);
+            data_store["start_time"] = new Date();
 
             return data_store;
         }
@@ -398,7 +399,8 @@
 
             var singles = $.map(data_store["single"], function(element, key) { return key; });
             var pairs = $.map(data_store["pair"], function(element, key) { return key + "-" + element; });
-            var data = { fnc: "update", sentence: sentence, singles: singles, pairs: pairs };
+            var time_spent = new Date() - data_store["start_time"];
+            var data = { fnc: "update", sentence: sentence, singles: singles, pairs: pairs, time_spent: time_spent };
             var args = { type: "POST", url: "{% url 'ajax' %}", data: data , complete: update_task_complete};
             $.ajax(args);
         }
