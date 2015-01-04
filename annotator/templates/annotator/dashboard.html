@@ -207,6 +207,14 @@
             $("#non-list, #single-list, #pair-list").empty();
         }
 
+        function acceptable(pairs, me) {
+            var first = me.data("offset");
+            return function(you) {
+                var second = you.data("offset");
+                return first in pairs && second in pairs[first];
+            };
+        }
+
         function initWorkspace(sentence, jobj) {
             var data_store = {non: jobj["targets"], single: {}, pair: {}, start_time: null};
 
@@ -239,6 +247,7 @@
                 var droppable = $(this);
                 droppable.droppable({
                     activeClass: "droppable",
+                    accept: acceptable(jobj["pairs"], droppable),
                     drop: function (event, ui) {
                         addPair(data_store, droppable.data("offset"), $(ui.draggable).data("offset"));
                         renderConnective(data_store);

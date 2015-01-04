@@ -130,7 +130,7 @@ def analyse_tokens(tokens):
 
 def indices(lst, value_list, *, start=0):
     for i, x in enumerate(lst):
-        if i >= start and x in value_list:
+        if i > start and x in value_list:
             yield i
 
 def update_task(user, sentence_num, m_singles, m_pairs, time_spent):
