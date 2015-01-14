@@ -172,10 +172,10 @@
             var a_pos = getPos(a);
             var b_pos = getPos(b);
 
-            var p_left = Math.min(a_pos.x, b_pos.x) - 2;
-            var p_right = Math.max(a_pos.x, b_pos.x) + 2;
-            var p_top = Math.min(a_pos.y, b_pos.y) - 2;
-            var p_bottom = Math.max(a_pos.y, b_pos.y) + 2;
+            var p_left = Math.min(a_pos.x, b_pos.x) - 10;
+            var p_right = Math.max(a_pos.x, b_pos.x) + 10;
+            var p_top = Math.min(a_pos.y, b_pos.y) - 15;
+            var p_bottom = Math.max(a_pos.y, b_pos.y) + 15;
 
             var c = $(document.createElement("canvas")).attr({
                 "height": p_bottom - p_top + 3,
@@ -192,8 +192,12 @@
             c.strokeStyle = "#f00";
             c.lineWidth = 2;
             c.beginPath();
-            c.moveTo(a_pos.x - p_left, a_pos.y - p_top);
-            c.lineTo(b_pos.x - p_left, b_pos.y - p_top);
+            var ax = a_pos.x - p_left;
+            var ay = a_pos.y - p_top;
+            var bx = b_pos.x - p_left;
+            var by = b_pos.y - p_top;
+            c.moveTo(ax, ay);
+            c.quadraticCurveTo((ax + bx)/2 + randomFloat()*2, (ay + by)/2 + randomFloat()*2, bx, by);
             c.stroke();
 
             return c;
